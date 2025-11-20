@@ -2,3 +2,5 @@ __pycache__/cli.cpython-311.pyc
 *.pyc
 /aws_bedrock_kb_cli.egg-info
 aws_local_access.sh
+.vscode/settings.json
+.DS_Store

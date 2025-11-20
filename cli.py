@@ -6,10 +6,10 @@ import json
 import sys
 from typing import List
 
-from kb_tool.config import BedrockConfig
-from kb_tool.generator import ResponseGenerator
-from kb_tool.kb_client import KnowledgeBaseClient
-from kb_tool.metadata import parse_metadata_args
+from tools.config import BedrockConfig
+from tools.retrieve_generate import ResponseGenerator
+from tools.retrieve import KnowledgeBaseClient
+from tools.metadata import parse_metadata_args
 
 
 def build_parser() -> argparse.ArgumentParser:

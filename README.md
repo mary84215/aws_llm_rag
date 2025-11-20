@@ -25,7 +25,8 @@
 
 1. 已具備對應 AWS 帳號的 IAM 權限，可呼叫 `bedrock-agent-runtime` 與 `bedrock-runtime` API。
 2. 工作站已設定好 AWS 認證資訊（`~/.aws/credentials` 或 `AWS_ACCESS_KEY_ID` 等環境變數）。
-3. aws_local_access運用sh指令執行 可以輸入MFA_CODE_ON_PHONE, 之後把echo出的那三組密碼丟入setting.json
+3. 在vscode terminal,運用sh指令執行aws_local_access.sh,可以輸入MFA_CODE_ON_PHONE, 之後把echo出的那三組密碼丟入settings.json
+4. aws s3 ls測試有沒有權限操啜aws, 若無法，請重開一個vscode terminal
 4. 目標 Knowledge Base、向量儲存區與 Bedrock 模型均已在對應 Region 建立。
 
 ## 安裝
