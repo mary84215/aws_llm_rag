@@ -34,9 +34,9 @@ def retrieve_from_kb(question: str,
 
     return response
 
-if __name__ == "__main__":
-    kb_id = "KB12345678"  # 替換成您實際的知識庫 ID
-    prompt_question = "請說明 SAS 簽呈 的流程與注意事項是什麼？"
-    result = retrieve_from_kb(prompt_question, kb_id)
-    print("檢索結果：")
-    print(json.dumps(result, indent=2, ensure_ascii=False))
+# if __name__ == "__main__":
+#     kb_id = "KB12345678"  # 替換成您實際的知識庫 ID
+#     prompt_question = "請說明 SAS 簽呈 的流程與注意事項是什麼？"
+#     result = retrieve_from_kb(prompt_question, kb_id)
+#     print("檢索結果：")
+#     print(json.dumps(result, indent=2, ensure_ascii=False))

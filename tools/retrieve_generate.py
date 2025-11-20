@@ -2,7 +2,7 @@ import boto3
 import json
 from botocore.config import Config
 
-def sas_signing_draft_via_kb(prompt_question: str,
+def ret_and_gen(prompt_question: str,
                              knowledge_base_id: str,
                              model_arn: str,
                              region: str = "us-east-1",
@@ -67,10 +67,10 @@ def sas_signing_draft_via_kb(prompt_question: str,
 
     return response
 
-if __name__ == "__main__":
-    kb_id = "KB_ABC123"  # 替換為你的知識庫 ID
-    model_arn = "arn:aws:bedrock:us-east-1::foundation-model/amazon.nova-pro-v1:0"  # 替換為實際模型 ARN
-    question = "我們準備提交 SAS 簽呈，目的為提升保險理賠流程效率，請幫我撰寫草稿。"
-    result = sas_signing_draft_via_kb(question, kb_id, model_arn)
-    print("生成內容：")
-    print(json.dumps(result, indent=2, ensure_ascii=False))
+# if __name__ == "__main__":
+#     kb_id = "KB_ABC123"  # 替換為你的知識庫 ID
+#     model_arn = "arn:aws:bedrock:us-east-1::foundation-model/amazon.nova-pro-v1:0"  # 替換為實際模型 ARN
+#     question = "我們準備提交 SAS 簽呈，目的為提升保險理賠流程效率，請幫我撰寫草稿。"
+#     result = sas_signing_draft_via_kb(question, kb_id, model_arn)
+#     print("生成內容：")
+#     print(json.dumps(result, indent=2, ensure_ascii=False))

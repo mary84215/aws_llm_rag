@@ -58,8 +58,8 @@ def rephrase_question(question: str,
     rephrased = resp_body["output"]["message"]["content"][0]["text"]
     return rephrased
 
-if __name__ == "__main__":
-    input_question = "我們公司的保險政策如何因應通貨膨脹？"
-    result = rephrase_question(input_question)
-    print("原問題：", input_question)
-    print("重述後：", result)
+# if __name__ == "__main__":
+#     input_question = "我們公司的保險政策如何因應通貨膨脹？"
+#     result = rephrase_question(input_question)
+#     print("原問題：", input_question)
+#     print("重述後：", result)
