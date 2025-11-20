@@ -1,15 +1,17 @@
 import boto3
 import json
+from typing import Optional
+
 from botocore.config import Config
 
+from tools.config import RetrieveGenerateConfig
+
+
 def ret_and_gen(prompt_question: str,
-                             knowledge_base_id: str,
-                             model_arn: str,
-                             region: str = "us-east-1",
-                             max_tokens: int = 500,
-                             temperature: float = 0.5,
-                             top_p: float = 0.9,
-                             number_of_results: int = 3) -> dict:
+                knowledge_base_id: str,
+                model_arn: str,
+                region: str = RetrieveGenerateConfig.REGION,
+                number_of_results: Optional[int] = None) -> dict:
     """
     使用 RetrieveAndGenerate API：從知識庫檢索，再生成 SAS 簽呈草稿。
     回傳 dict，包含生成文本與引用來源。
@@ -28,37 +30,11 @@ def ret_and_gen(prompt_question: str,
     input_payload = {"text": prompt_question}
 
     # 設定檢索 + 生成流程
-    retrieve_and_gen_config = {
-        "type": "KNOWLEDGE_BASE",
-        "knowledgeBaseConfiguration": {
-            "knowledgeBaseId": knowledge_base_id,
-            "modelArn": model_arn,
-            "retrievalConfiguration": {
-                "vectorSearchConfiguration": {
-                    "numberOfResults": number_of_results,
-                    "overrideSearchType": "SEMANTIC"
-                }
-            },
-            "generationConfiguration": {
-                "promptTemplate": {
-                    "textPromptTemplate": (
-                        "請基於以下檢索結果撰寫一份 SAS 簽呈草稿。"
-                        "使用簡潔條列清楚說明目的、現況、建議與預算。\n\n"
-                        "檢索結果：\n$search_results$\n\n"
-                        "草稿開始："
-                    )
-                },
-                "inferenceConfig": {
-                    "textInferenceConfig": {
-                        "maxTokens": max_tokens,
-                        "temperature": temperature,
-                        "topP": top_p,
-                        "stopSequences": ["\n\n"]
-                    }
-                }
-            }
-        }
-    }
+    retrieve_and_gen_config = RetrieveGenerateConfig.retrieve_and_gen_config(
+        knowledge_base_id=knowledge_base_id,
+        model_arn=model_arn,
+        number_of_results=number_of_results,
+    )
 
     response = client.retrieve_and_generate(
         input=input_payload,

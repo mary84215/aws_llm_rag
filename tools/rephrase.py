@@ -2,13 +2,10 @@ import boto3
 import json
 from botocore.config import Config
 
-def rephrase_question(question: str,
-                      region: str = "us-east-1",
-                      model_id: str = "amazon.nova-pro-v1:0",
-                      max_tokens: int = 500,
-                      temperature: float = 0.7,
-                      top_p: float = 0.9,
-                      top_k: int = 50) -> str:
+from tools.config import RephraseConfig
+
+
+def rephrase_question(question: str, region: str = RephraseConfig.REGION) -> str:
     """
     接收一個問題，回傳模型重述後的問題文字。
     """
@@ -36,17 +33,12 @@ def rephrase_question(question: str,
     # 組建 request body
     body = {
         "messages": messages,
-        "inferenceConfig": {
-            "max_new_tokens": max_tokens,
-            "temperature": temperature,
-            "top_p": top_p,
-            "top_k": top_k
-        }
+        "inferenceConfig": RephraseConfig.inference_config()
     }
 
     # 呼叫 invoke_model
     response = client.invoke_model(
-        modelId=model_id,
+        modelId=RephraseConfig.MODEL_ID,
         contentType="application/json",
         accept="application/json",
         body=json.dumps(body)

@@ -1,11 +1,16 @@
 import boto3
 import json
+from typing import Optional
+
 from botocore.config import Config
+
+from tools.config import RetrieveConfig
+
 
 def retrieve_from_kb(question: str,
                      knowledge_base_id: str,
-                     region: str = "us-east-1",
-                     number_of_results: int = 3) -> dict:
+                     region: str = RetrieveConfig.REGION,
+                     number_of_results: Optional[int] = None) -> dict:
     """
     從指定的知識庫進行檢索 (Retrieve API)，回傳最相關的內容塊。
     """
@@ -19,12 +24,7 @@ def retrieve_from_kb(question: str,
         )
     )
 
-    retrieval_configuration = {
-        "vectorSearchConfiguration": {
-            "numberOfResults": number_of_results,
-            "overrideSearchType": "SEMANTIC"
-        }
-    }
+    retrieval_configuration = RetrieveConfig.retrieval_configuration(number_of_results)
 
     response = client.retrieve(
         knowledgeBaseId=knowledge_base_id,
