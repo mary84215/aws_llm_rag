@@ -25,6 +25,26 @@ class RetrieveConfig:
     REGION = DEFAULT_REGION
     NUMBER_OF_RESULTS = 3
     OVERRIDE_SEARCH_TYPE = "SEMANTIC"
+    # META_ATT_IMP = [
+    #     {"description":"文件標題 (title)", "key":"title", "type":"STRING"},
+    #     {"description":"文件所屬類別 (category)", "key":"category", "type":"STRING"},
+    #     {"description":"文件摘要 / summary", "key":"summary", "type":"STRING"},
+    #     {"description":"文件 tags 列表 (tags)", "key":"tags", "type":"STRING_LIST"},
+    #     {"description":"產品名稱 (product_name)", "key":"product_name", "type":"STRING"},
+    #     {"description":"建立年份 (creation_year)", "key":"creation_year", "type":"NUMBER"},
+    #     {"description":"建立日期 (date_created)", "key":"date_created", "type":"STRING"},
+    #     {"description":"相關部門 (related_departments)", "key":"related_departments", "type":"STRING_LIST"},
+    #     {"description":"最高核准層級 (highest_approval_level)", "key":"highest_approval_level", "type":"STRING"},
+    #     {"description":"預算金額 (budget_amount)", "key":"budget_amount", "type":"NUMBER"}
+    # ]
+    META_ATT_IMP = [
+        {"description":"文件所屬類別 (category)", "key":"category", "type":"STRING"},
+        {"description":"文件 tags 列表 (tags)", "key":"tags", "type":"STRING_LIST"},
+        {"description":"產品名稱 (product_name)", "key":"product_name", "type":"STRING"},
+        {"description":"建立年份 (creation_year)", "key":"creation_year", "type":"NUMBER"}
+    ]
+    MODEL_ARN_IMP = "arn:aws:bedrock:us-east-1::foundation-model/amazon.nova-lite-v1:0"
+
 
     @classmethod
     def retrieval_configuration(cls, number_of_results: Optional[int] = None) -> Dict[str, object]:
@@ -33,6 +53,10 @@ class RetrieveConfig:
             "vectorSearchConfiguration": {
                 "numberOfResults": results,
                 "overrideSearchType": cls.OVERRIDE_SEARCH_TYPE,
+                "implicitFilterConfiguration": {
+                "metadataAttributes": cls.META_ATT_IMP,
+                    "modelArn": cls.MODEL_ARN_IMP
+                },
             }
         }
 
