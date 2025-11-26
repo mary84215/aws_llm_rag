@@ -44,9 +44,10 @@ def ret_and_gen(prompt_question: str,
     return response
 
 # if __name__ == "__main__":
-#     kb_id = "KB_ABC123"  # 替換為你的知識庫 ID
-#     model_arn = "arn:aws:bedrock:us-east-1::foundation-model/amazon.nova-pro-v1:0"  # 替換為實際模型 ARN
+#     KB_ID = "YOUR_KB_ID"
+#     MODEL_ARN = "arn:aws:bedrock:us-east-1::foundation-model/amazon.nova-pro-v1:0"
+#     if KB_ID == "YOUR_KB_ID":
+#         raise ValueError("Please replace YOUR_KB_ID with the actual knowledge base ID before running this file.")
 #     question = "我們準備提交 SAS 簽呈，目的為提升保險理賠流程效率，請幫我撰寫草稿。"
-#     result = sas_signing_draft_via_kb(question, kb_id, model_arn)
-#     print("生成內容：")
-#     print(json.dumps(result, indent=2, ensure_ascii=False))
+#     print("Testing ret_and_gen...")
+#     print(json.dumps(ret_and_gen(question, KB_ID, MODEL_ARN), indent=2, ensure_ascii=False))

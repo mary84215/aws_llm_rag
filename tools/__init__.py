@@ -3,6 +3,7 @@
 __all__ = [
     "config",
     "metadata",
-    "kb_client",
-    "generator",
+    "rephrase",
+    "retrieve",
+    "retrieve_generate"
 ]
