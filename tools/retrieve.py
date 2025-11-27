@@ -140,8 +140,17 @@ QUERY_CONTEXT_TEMPLATE = """
     # Metadata Schema
     ```json
     [
-        {"description":"產品名稱 (product_name)，為SAS, SAS Viya或是DataStage", "key":"product_name", "type":"STRING"}
-    ]
+        {
+        "description":"產品名稱 (product_name)，為SAS, SAS Viya或是DataStage",
+        "key":"product_name",
+        "type":"STRING"
+        },
+        {
+        "description":"相關單位（related_departments），包含數據經營部、行銷資訊部、系統資訊部等",
+        "key":"related_departments",
+        "type":"STRING_LIST"
+        }
+    ] #這邊可以修改「我們可能要用哪些filter」
     ```
 
     # Input User Query:
