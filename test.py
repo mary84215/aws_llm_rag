@@ -32,6 +32,8 @@ if __name__ == "__main__":
     #     print("No output text found in the response.")
 
     KB_ID = "JJYFVHJSPA"
-    question = "幫我生成2025 SAS地端簽呈"
+    question = "幫我生成2025 SAS地端簽呈，這份簽呈屬於軟體續約，軟體類別為SAS"
     print("Testing retrieve_from_kb...")
     print(json.dumps(rt.retrieve_from_kb(question, KB_ID), indent=2, ensure_ascii=False))
+
+    #print(rt._generate_metadata_filter("幫我生成2025 SAS地端簽呈，這份簽呈屬於軟體續約，軟體類別為SAS"))
