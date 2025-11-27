@@ -9,10 +9,13 @@ import tools.retrieve_generate as rg
 
 
 if __name__ == "__main__":
+    # rephrase
     # prompt = "幫我生成SAS軟體採購簽呈"
     # print("Testing rephrase_question...")
     # print(f"Input : {prompt}")
     # print(f"Output: {rf.rephrase_question(prompt)}")
+
+    # retrieve and generate
 
     # KB_ID = "THK650DL3Q"
     # MODEL_ARN = "arn:aws:bedrock:us-east-1::foundation-model/amazon.nova-pro-v1:0"
@@ -31,9 +34,15 @@ if __name__ == "__main__":
     # else:
     #     print("No output text found in the response.")
 
+    # retrieve
     KB_ID = "JJYFVHJSPA"
-    question = "幫我生成2025 SAS地端簽呈，這份簽呈屬於軟體續約，軟體類別為SAS"
-    print("Testing retrieve_from_kb...")
-    print(json.dumps(rt.retrieve_from_kb(question, KB_ID), indent=2, ensure_ascii=False))
 
-    #print(rt._generate_metadata_filter("幫我生成2025 SAS地端簽呈，這份簽呈屬於軟體續約，軟體類別為SAS"))
+    # 得出chunk
+    #question = "幫我生成SAS地端簽呈，這份簽呈屬於軟體續約，軟體類別為SAS"
+    # question = "幫我生成SAS Viya雲端簽呈，這份簽呈屬於軟體新約，軟體類別為SAS Viya"
+    # print("Testing retrieve_from_kb...")
+    # print(json.dumps(rt.retrieve_from_kb(question, KB_ID), indent=2, ensure_ascii=False))
+
+    # 得出metadata filter 
+    print(rt._generate_metadata_filter("幫我生成2025 SAS地端簽呈，這份簽呈屬於軟體續約，軟體類別為SAS"))
+    #print(rt._generate_metadata_filter("幫我生成SAS Viya雲端簽呈"))

@@ -43,10 +43,10 @@ METADATA_FILTER_SYSTEM_PROMPT = """
     }
     ```
 
-    - `comp`: comparator, MUST be one of ["eq", "ne", "gt", "gte", "lt", "lte", "in", "nin", "startwith", "listContains", "stringContains"]
+    - `comp`: comparator, MUST be one of ["equals", "notEquals", "greaterThan", "greaterThanOrEquals", "lessThan", "lessThanOrEquals", "in", "notIn", "startsWith", "listContains", "stringContains"]
     - `attr` (string): name of attribute to apply the comparison to (i.e., metadata)
     - `val` (string | list[string]): the comparison value (i.e., filter value)
-    Note: "gt", "gte", "lt", and "lte" can only apply to NUMBER data typed filter values. The filter value for the "in" and "nin" comparators should have the type of list[string] instead of string. "listContains" can only apply to STRING_LIST typed metadata attributes.
+    Note: "greaterThan", "greaterThanOrEquals", "lessThan", and "lessThanOrEquals" can only apply to NUMBER data typed filter values. The filter value for the "in" and "notIn" comparators should have the type of list[string] instead of string. "listContains" can only apply to STRING_LIST typed metadata attributes.
 
     A logical operation statement takes the form:  
     ```json
@@ -58,7 +58,7 @@ METADATA_FILTER_SYSTEM_PROMPT = """
     - `op`: logical operator, MUST be one of ["and", "or"]
     - `statement1`, `statement2`, ... (comparison statements or logical operation statements): one or more statements to apply the operation to
 
-    Ensure that you only use comparators ("eq", "ne", "gt", "gte", "lt", "lte", "in", "nin", "startwith", "listContains", "stringContains") and logical operators ('and', 'or') in your queries. Avoid using functions like 'exists' or any other function over attributes.
+    Ensure that you only use comparators ("equals", "notEquals", "greaterThan", "greaterThanOrEquals", "lessThan", "lessThanOrEqualst", "lessThanOrEquals", "in", "notIn", "startwith", "listContains", "stringContains") and logical operators ('and', 'or') in your queries. Avoid using functions like 'exists' or any other function over attributes.
 
     Filters must only refer to attributes that exist in the metadata schema. If a query involves intents that don't exist in the metadata schema, skip that intent.
 
@@ -129,8 +129,8 @@ QUERY_CONTEXT_TEMPLATE = """
     "query": "What's the average rating of the movies?",
     "filter": {
         "andAll": [
-        {"lt": {"key": "Year", "value": 2000}},
-        {"eq": {"key": "Genre", "value": "action"}}
+        {"lessThan": {"key": "Year", "value": 2000}},
+        {"equals": {"key": "Genre", "value": "action"}}
         ]
     }
     }
@@ -140,9 +140,7 @@ QUERY_CONTEXT_TEMPLATE = """
     # Metadata Schema
     ```json
     [
-        {"description":"文件所屬類別 (category)", "key":"category", "type":"STRING"},
-        {"description":"文件 tags 列表 (tags)", "key":"tags", "type":"STRING_LIST"},
-        {"description":"產品名稱 (product_name)", "key":"product_name", "type":"STRING"}
+        {"description":"產品名稱 (product_name)，為SAS, SAS Viya或是DataStage", "key":"product_name", "type":"STRING"}
     ]
     ```
 
