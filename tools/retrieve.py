@@ -4,7 +4,7 @@ from typing import Any, Optional
 
 from botocore.config import Config
 
-from tools.config import RephraseConfig, RetrieveConfig
+from tools.config import BasicModelConfig, RetrieveConfig
 
 
 # METADATA_FILTER_SYSTEM_PROMPT = (
@@ -157,7 +157,7 @@ def _generate_metadata_filter(query: str) -> Optional[dict]:
     """
     client = boto3.client(
         "bedrock-runtime",
-        region_name=RephraseConfig.REGION,
+        region_name=BasicModelConfig.REGION,
         config=Config(connect_timeout=3600, read_timeout=3600, retries={"max_attempts": 1}),
     )
 
@@ -171,12 +171,12 @@ def _generate_metadata_filter(query: str) -> Optional[dict]:
                 "content": [{"text": query_context}],
             }
         ],
-        "inferenceConfig": RephraseConfig.inference_config(),
+        "inferenceConfig": BasicModelConfig.inference_config(),
     }
 
     try:
         response = client.invoke_model(
-            modelId=RephraseConfig.MODEL_ID,
+            modelId=BasicModelConfig.MODEL_ID,
             contentType="application/json",
             accept="application/json",
             body=json.dumps(body),

@@ -98,6 +98,44 @@ kb-cli --mode generate "總結零信任規範重點" --metadata language=zh --te
 - 若要檢視實際送出的 metadata filter 格式，可使用 `print` 或在 `kb_tool/config.py` 中加入額外 logging。
 - 一旦需要進行更進階的 filter（例如 `in`、`greaterThan`），可在 `metadata_dict_from_key_values` 內擴充。
 
+## Lambda 部署
+
+我已經為您創建了三個檔案：
+
+### 1. lambda_handler.py - Lambda 主程式
+- 接收 prompt_question 輸入
+- 使用 RetrieveGenerateConfig 設定
+- 呼叫 retrieve_generate.py 執行檢索與生成
+- 回傳簽呈草稿文字
+
+### 2. test_lambda.py - 測試案例
+包含三種測試情境：
+- 直接事件格式
+- API Gateway 格式（JSON body）
+- 錯誤情況處理
+
+### 3. requirements_lambda.txt - Lambda 依賴
+
+### 部署前準備
+
+設定環境變數（在 test_lambda.py 中更新實際值）：
+```bash
+KNOWLEDGE_BASE_ID=your-actual-kb-id
+MODEL_ARN=your-actual-model-arn
+```
+
+本地測試：
+```bash
+python test_lambda.py
+```
+
+Lambda 部署時需要：
+- 將整個 tools/ 資料夾一起打包
+- 設定環境變數 KNOWLEDGE_BASE_ID 和 MODEL_ARN
+- 確保 Lambda 執行角色有 bedrock-agent-runtime 權限
+
+Lambda 函數會回傳 JSON 格式，包含 draft_text 欄位存放生成的簽呈草稿。
+
 ## 免責聲明
 
 此程式碼僅作為測試與教學用途，請依照組織安全規範妥善管理 AWS 認證與敏感資料。

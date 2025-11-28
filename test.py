@@ -17,25 +17,25 @@ if __name__ == "__main__":
 
     # retrieve and generate
 
-    # KB_ID = "THK650DL3Q"
-    # MODEL_ARN = "arn:aws:bedrock:us-east-1::foundation-model/amazon.nova-pro-v1:0"
-    # question = "幫我生成2025 SAS地端簽呈。"
-    # print("Testing ret_and_gen...")
-    # response = rg.ret_and_gen(question, KB_ID, MODEL_ARN)
-    # print(json.dumps(response, indent=2, ensure_ascii=False))
+    KB_ID = "JJYFVHJSPA"
+    MODEL_ARN = "arn:aws:bedrock:us-east-1::foundation-model/amazon.nova-pro-v1:0"
+    question = "幫我生成2025 SAS Viya雲端簽呈。"
+    print("Testing ret_and_gen...")
+    response = rg.ret_and_gen(question, KB_ID, MODEL_ARN)
+    #print(json.dumps(response, indent=2, ensure_ascii=False))
 
-    # output_text = response.get("output", {}).get("text")
-    # if output_text:
-    #     output_dir = Path("output")
-    #     output_dir.mkdir(parents=True, exist_ok=True)
-    #     output_path = output_dir / "ret_and_gen.md"
-    #     output_path.write_text(output_text, encoding="utf-8")
-    #     print(f"Saved generated text to {output_path}")
-    # else:
-    #     print("No output text found in the response.")
+    output_text = response.get("output", {}).get("text")
+    if output_text:
+        output_dir = Path("output")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output_path = output_dir / "ret_and_gen.md"
+        output_path.write_text(output_text, encoding="utf-8")
+        print(f"Saved generated text to {output_path}")
+    else:
+        print("No output text found in the response.")
 
     # retrieve
-    KB_ID = "JJYFVHJSPA"
+    #KB_ID = "JJYFVHJSPA"
 
     # 得出chunk
     #question = "幫我生成SAS地端簽呈，這份簽呈屬於軟體續約，軟體類別為SAS"
@@ -44,5 +44,5 @@ if __name__ == "__main__":
     # print(json.dumps(rt.retrieve_from_kb(question, KB_ID), indent=2, ensure_ascii=False))
 
     # 得出metadata filter 
-    print(rt._generate_metadata_filter("幫我生成2025 SAS地端簽呈，這份簽呈屬於軟體續約，軟體類別為SAS"))
+    #print(rt._generate_metadata_filter("幫我生成2025 SAS地端簽呈，這份簽呈屬於軟體續約，軟體類別為SAS"))
     #print(rt._generate_metadata_filter("幫我生成SAS Viya雲端簽呈"))

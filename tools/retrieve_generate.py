@@ -13,7 +13,7 @@ def ret_and_gen(prompt_question: str,
                 region: str = RetrieveGenerateConfig.REGION,
                 number_of_results: Optional[int] = None) -> dict:
     """
-    使用 RetrieveAndGenerate API：從知識庫檢索，再生成 SAS 簽呈草稿。
+    使用 RetrieveAndGenerate API：從知識庫檢索，再生成簽呈草稿。
     回傳 dict，包含生成文本與引用來源。
     """
     client = boto3.client(
@@ -42,12 +42,3 @@ def ret_and_gen(prompt_question: str,
     )
 
     return response
-
-# if __name__ == "__main__":
-#     KB_ID = "YOUR_KB_ID"
-#     MODEL_ARN = "arn:aws:bedrock:us-east-1::foundation-model/amazon.nova-pro-v1:0"
-#     if KB_ID == "YOUR_KB_ID":
-#         raise ValueError("Please replace YOUR_KB_ID with the actual knowledge base ID before running this file.")
-#     question = "我們準備提交 SAS 簽呈，目的為提升保險理賠流程效率，請幫我撰寫草稿。"
-#     print("Testing ret_and_gen...")
-#     print(json.dumps(ret_and_gen(question, KB_ID, MODEL_ARN), indent=2, ensure_ascii=False))

@@ -3,7 +3,7 @@ from typing import Dict, Optional
 DEFAULT_REGION = "us-east-1"
 
 
-class RephraseConfig:
+class BasicModelConfig:
     REGION = DEFAULT_REGION
     MODEL_ID = "amazon.nova-pro-v1:0"
     MAX_TOKENS = 500

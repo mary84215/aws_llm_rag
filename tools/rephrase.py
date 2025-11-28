@@ -2,10 +2,10 @@ import boto3
 import json
 from botocore.config import Config
 
-from tools.config import RephraseConfig
+from tools.config import BasicModelConfig
 
 
-def rephrase_question(question: str, region: str = RephraseConfig.REGION) -> str:
+def rephrase_question(question: str, region: str = BasicModelConfig.REGION) -> str:
     """
     接收一個問題，回傳模型重述後的問題文字。
     """
@@ -51,12 +51,12 @@ def rephrase_question(question: str, region: str = RephraseConfig.REGION) -> str
     body = {
         "messages": messages,
         "system":system_list,
-        "inferenceConfig": RephraseConfig.inference_config()
+        "inferenceConfig": BasicModelConfig.inference_config()
     }
 
     # 呼叫 invoke_model
     response = client.invoke_model(
-        modelId=RephraseConfig.MODEL_ID,
+        modelId=BasicModelConfig.MODEL_ID,
         contentType="application/json",
         accept="application/json",
         body=json.dumps(body)
