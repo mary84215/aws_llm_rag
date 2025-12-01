@@ -23,7 +23,7 @@ class RephraseConfig:
 
 class RetrieveConfig:
     REGION = DEFAULT_REGION
-    NUMBER_OF_RESULTS = 3 #回傳幾個chunk回來
+    NUMBER_OF_RESULTS = 10 #回傳幾個chunk回來
     OVERRIDE_SEARCH_TYPE = "SEMANTIC"
 
     @classmethod

@@ -38,11 +38,11 @@ if __name__ == "__main__":
     KB_ID = "JJYFVHJSPA"
 
     # 得出chunk
-    question = "幫我生成SAS地端簽呈，這份簽呈屬於軟體續約，軟體類別為SAS"
+    question = "2025/12/1，數據部數據工程小組起簽OpenAI ChatGPT license合約，全公司共200個license，總計五年2000000元，考量合約金額，擬簽至總經理"
     #question = "幫我生成SAS Viya雲端簽呈，這份簽呈屬於軟體新約，軟體類別為SAS Viya"
     # print("Testing retrieve_from_kb...")
     #print(json.dumps(rt.retrieve_from_kb(question, KB_ID), indent=2, ensure_ascii=False))
 
     # 得出metadata filter 
-    print(rt._generate_metadata_filter("幫我生成2025 SAS地端簽呈，這份簽呈屬於軟體續約，軟體類別為SAS，申請單位為系統資訊部"))
-    #print(rt._generate_metadata_filter("幫我生成SAS Viya雲端簽呈"))
+    print(rt._generate_metadata_filter(question))
+    #print(rt._generate_metadata_filter("國泰人壽2025簽呈SAS續約"))

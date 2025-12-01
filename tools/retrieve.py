@@ -1,8 +1,10 @@
 import boto3
 import json
+from decimal import Decimal
 from typing import Any, Optional
 
 from botocore.config import Config
+from botocore.exceptions import ClientError
 
 from tools.config import RephraseConfig, RetrieveConfig
 
@@ -93,31 +95,50 @@ QUERY_CONTEXT_TEMPLATE = """
     ```json
     [
     {
-        "key": "Title",
+        "key": "title",
         "type": "STRING",
-        "description": "The title of the movie."
+        "description": "The title of the contract."
     },
     {
-        "key": "Genre",
+        "key": "category",
         "type": "STRING",
-        "description": "The genre of the movie. One of ['science fiction', 'comedy', 'drama', 'thriller', 'romance', 'action', 'animated']"
+        "description": "The category of this contract, often but not exclusively on of ['軟體簽約','軟體續約','硬體簽約','硬體續約']"
     },
     {
-        "key": "Year",
+        "key": "product_name",
+        "type": "STRING",
+        "description": "The name of the product"
+    },
+    {
+        "key": "creation_year",
         "type": "NUMBER",
-        "description": "The year the movie was released (YYYY)"
+        "description": "The year the contract was signed or will be signed."
     },
     {
-        "key": "Director",
+        "key": "date_created",
         "type": "STRING",
-        "description": "The name of the movie director"
+        "description": "The date the contract was signed or will be signed."
     },
     {
-        "key": "Rating",
+        "key": "related_departments",
+        "type": "STRING_LIST",
+        "description": "The departments related to this contract. Mostly plural."
+    },
+    {
+        "key": "highest_approval_level",
+        "type": "STRING",
+        "description": "The highest rank of approval. Mostly one of ['總經理','副總經理','協理']."
+    },
+    {
+        "key": "budget_amount",
         "type": "NUMBER",
-        "description": "A 1-10 rating for the movie"
-    }
-    ]
+        "description": "The amount of money paid in this contract."
+    },
+    {
+        "key": "tags",
+        "type": "STING_LIST",
+        "description": "Any possible useful information other than the categorized metadata."
+    }]
     ```
 
     # Input User Query:  
@@ -149,6 +170,31 @@ QUERY_CONTEXT_TEMPLATE = """
         "description":"相關單位（related_departments），包含數據經營部、行銷資訊部、系統資訊部等",
         "key":"related_departments",
         "type":"STRING_LIST"
+        },
+        {
+        "description":"合約類別（category），可能包含軟體簽約、軟體續約、硬體簽約或硬體續約",
+        "key":"category",
+        "type":"STRING_LIST"
+        },
+        {
+        "description":"起簽年份（creation_year），為合約起簽的年份",
+        "key":"creation_year",
+        "type":"NUMBER"
+        },
+        {
+        "description":"起簽日期（date_created），為合約起簽的日期",
+        "key":"date_created",
+        "type":"STRING"
+        },
+        {
+        "description":"最高簽約層級(highest_approval_level)，此份合約最高簽到哪個層級",
+        "key":"highest_approval_level",
+        "type":"STRING"
+        },
+        {
+        "description":"簽約費用(budget_amount)，本件合約簽署的總金額",
+        "key":"budget_amount",
+        "type":"NUMBER"
         }
     ] #這邊可以修改「我們可能要用哪些filter」
     ```
@@ -158,6 +204,260 @@ QUERY_CONTEXT_TEMPLATE = """
 
     # Output Structured Request:
 """
+
+
+ATTRIBUTE_VALUE_KEYS = {
+    "booleanValue",
+    "doubleValue",
+    "longValue",
+    "stringListValue",
+    "stringValue",
+}
+COMPARATOR_KEYS = {
+    "equals",
+    "notEquals",
+    "greaterThan",
+    "greaterThanOrEquals",
+    "lessThan",
+    "lessThanOrEquals",
+    "in",
+    "notIn",
+    "startsWith",
+    "listContains",
+    "stringContains",
+}
+LOGICAL_KEYS = {"andAll", "orAll", "and", "or", "op"}
+
+# Known attribute types for the current KB metadata schema.
+# Extend this map if you add more metadata fields.
+ATTRIBUTE_TYPES: dict[str, str] = {
+    "title": "STRING",
+    "category": "STRING",
+    "creation_year": "NUMBER",
+    "product_name": "STRING",
+    "related_departments": "STRING_LIST",
+    "tags": "STRING_LIST",
+    "highest_approval_level": "STRING",
+    "date_created": "STRING",
+    "budget_amount": "NUMBER"
+}
+
+
+def _coerce_attribute_value(value: Any, force_list: bool = False) -> Optional[dict]:
+    """
+    Convert a raw value from the LLM output into the Bedrock AttributeValue schema.
+    Returns None when the value is empty or cannot be mapped.
+    """
+    if isinstance(value, dict) and ATTRIBUTE_VALUE_KEYS & set(value.keys()):
+        return {k: v for k, v in value.items() if k in ATTRIBUTE_VALUE_KEYS}
+
+    if isinstance(value, bool):
+        return {"booleanValue": value}
+
+    if isinstance(value, (int, Decimal)) and not isinstance(value, bool):
+        return {"longValue": int(value)}
+
+    if isinstance(value, float):
+        return {"doubleValue": value}
+
+    if isinstance(value, list):
+        items = [str(item).strip() for item in value if item is not None and str(item).strip()]
+        return {"stringListValue": items} if items else None
+
+    if force_list:
+        text = str(value).strip()
+        return {"stringListValue": [text]} if text else None
+
+    text = str(value).strip()
+    return {"stringValue": text} if text else None
+
+
+def _enforce_attribute_types(node: Any) -> Optional[dict]:
+    """
+    Ensure comparator values match the KB metadata types (e.g., STRING vs STRING_LIST).
+    Prevents Bedrock "filter value type provided is not supported" errors.
+    """
+    if not isinstance(node, dict):
+        return None
+
+    fixed: dict[str, Any] = {}
+    for key, value in node.items():
+        if key in {"andAll", "orAll"}:
+            children = value if isinstance(value, list) else []
+            normalized_children = [_enforce_attribute_types(child) for child in children]
+            normalized_children = [child for child in normalized_children if child]
+            if normalized_children:
+                fixed[key] = normalized_children
+        elif key in COMPARATOR_KEYS:
+            if not isinstance(value, dict):
+                continue
+            attr = value.get("key")
+            attr_value = value.get("value", {})
+            if not attr or not isinstance(attr_value, dict):
+                continue
+
+            attr_type = ATTRIBUTE_TYPES.get(attr)
+            # Skip unknown attributes to avoid invalid filter errors.
+            if not attr_type:
+                continue
+
+            # Normalize STRING_LIST attributes to stringListValue
+            if attr_type == "STRING_LIST":
+                list_value = attr_value.get("stringListValue")
+                if list_value is None:
+                    raw = attr_value.get("stringValue") or attr_value.get("longValue") or attr_value.get("doubleValue")
+                    if raw is not None:
+                        list_value = [str(raw)]
+                if list_value:
+                    attr_value = {"stringListValue": [str(item).strip() for item in list_value if str(item).strip()]}
+                else:
+                    continue
+
+            # Normalize STRING attributes to stringValue
+            elif attr_type == "STRING":
+                if "stringValue" not in attr_value:
+                    # fallback to first available value as string
+                    raw = next(iter(attr_value.values()), None)
+                    if raw is None:
+                        continue
+                    text = str(raw).strip()
+                    if not text:
+                        continue
+                    attr_value = {"stringValue": text}
+
+            # Normalize NUMBER attributes to longValue/doubleValue
+            elif attr_type == "NUMBER":
+                num_value = None
+                if "longValue" in attr_value:
+                    num_value = attr_value.get("longValue")
+                elif "doubleValue" in attr_value:
+                    num_value = attr_value.get("doubleValue")
+                else:
+                    raw = attr_value.get("stringValue") or next(iter(attr_value.values()), None)
+                    if raw is not None:
+                        try:
+                            num_value = int(raw)
+                        except (ValueError, TypeError):
+                            try:
+                                num_value = float(raw)
+                            except (ValueError, TypeError):
+                                num_value = None
+                if num_value is None:
+                    continue
+                if isinstance(num_value, bool):
+                    continue
+                if isinstance(num_value, float) and not num_value.is_integer():
+                    attr_value = {"doubleValue": float(num_value)}
+                else:
+                    attr_value = {"longValue": int(num_value)}
+
+            # Normalize BOOLEAN attributes to booleanValue
+            elif attr_type == "BOOLEAN":
+                bool_value = attr_value.get("booleanValue")
+                if bool_value is None:
+                    raw = attr_value.get("stringValue") or next(iter(attr_value.values()), None)
+                    if isinstance(raw, str):
+                        lowered = raw.strip().lower()
+                        if lowered in {"true", "yes", "1"}:
+                            bool_value = True
+                        elif lowered in {"false", "no", "0"}:
+                            bool_value = False
+                if bool_value is None:
+                    continue
+                attr_value = {"booleanValue": bool(bool_value)}
+
+            fixed[key] = {"key": attr, "value": attr_value}
+        else:
+            fixed[key] = value
+
+    return fixed or None
+
+
+def _normalize_comparator_payload(comparator: str, payload: Any) -> Optional[dict]:
+    """
+    Normalize a single comparator block into the expected Bedrock format.
+    """
+    if not isinstance(payload, dict):
+        return None
+
+    key = payload.get("key")
+    raw_value = payload.get("value")
+    if not key or raw_value is None:
+        return None
+
+    prefer_list = comparator in {"in", "notIn", "listContains"}
+    attr_value = _coerce_attribute_value(raw_value, force_list=prefer_list)
+    if not attr_value:
+        return None
+
+    return {"key": key, "value": attr_value}
+
+
+def _normalize_filter_node(node: Any) -> Optional[dict]:
+    """
+    Recursively normalize filter nodes produced by the LLM into Bedrock's filter schema.
+    Unsupported or empty nodes return None to avoid invalid requests.
+    """
+    if not isinstance(node, dict):
+        return None
+
+    normalized: dict[str, Any] = {}
+    for key, value in node.items():
+        if key in LOGICAL_KEYS:
+            children = value if isinstance(value, list) else []
+            child_filters = [_normalize_filter_node(child) for child in children]
+            child_filters = [child for child in child_filters if child]
+            if child_filters:
+                normalized["andAll" if key in {"andAll", "and", "op"} else "orAll"] = child_filters
+        elif key in COMPARATOR_KEYS:
+            comparator_block = _normalize_comparator_payload(key, value)
+            if comparator_block:
+                normalized[key] = comparator_block
+
+    return normalized or None
+
+
+def _normalize_metadata_filter(metadata_filter: Any) -> Optional[dict]:
+    """
+    Convert the LLM-generated filter into a Bedrock-compatible RetrievalFilter.
+    Returns None when the filter is unusable.
+    """
+    normalized = _normalize_filter_node(metadata_filter)
+    if not normalized:
+        return None
+
+    compacted = _compact_filter_node(normalized)
+    return _enforce_attribute_types(compacted) if compacted else None
+
+
+def _compact_filter_node(node: Any) -> Optional[dict]:
+    """
+    Remove single-child logical nodes (and/or) that Bedrock rejects.
+    Bedrock expects at least two children for andAll/orAll, so unwrap when only one.
+    """
+    if not isinstance(node, dict):
+        return None
+
+    compacted = {}
+    for key, value in node.items():
+        if key in {"andAll", "orAll"}:
+            children = value if isinstance(value, list) else []
+            cleaned_children = [child for child in (children or []) if child]
+            cleaned_children = [
+                _compact_filter_node(child) if isinstance(child, dict) else child
+                for child in cleaned_children
+            ]
+            cleaned_children = [child for child in cleaned_children if child]
+
+            # Unwrap single-child logical blocks to avoid invalid length errors.
+            if len(cleaned_children) == 1:
+                return cleaned_children[0]
+            if cleaned_children:
+                compacted[key] = cleaned_children
+        else:
+            compacted[key] = value
+
+    return compacted or None
 
 
 def _generate_metadata_filter(query: str) -> Optional[dict]:
@@ -231,7 +531,8 @@ def _generate_metadata_filter(query: str) -> Optional[dict]:
         except json.JSONDecodeError:
             return None
 
-    return metadata_filter if isinstance(metadata_filter, dict) else None
+    normalized_filter = _normalize_metadata_filter(metadata_filter)
+    return normalized_filter if isinstance(normalized_filter, dict) else None
 
 
 def retrieve_from_kb(question: str,
@@ -257,12 +558,27 @@ def retrieve_from_kb(question: str,
         number_of_results=number_of_results,
         metadata_filter=metadata_filter,
     )
-
-    response = client.retrieve(
-        knowledgeBaseId=knowledge_base_id,
-        retrievalQuery={"text": question},
-        retrievalConfiguration=retrieval_configuration
-    )
+    try:
+        response = client.retrieve(
+            knowledgeBaseId=knowledge_base_id,
+            retrievalQuery={"text": question},
+            retrievalConfiguration=retrieval_configuration
+        )
+    except ClientError as exc:
+        # Fallback: if filter is invalid, retry without filter to avoid blocking retrieval.
+        error_msg = exc.response.get("Error", {}).get("Message", "")
+        if metadata_filter and "filter value type" in error_msg.lower():
+            retrieval_configuration = RetrieveConfig.retrieval_configuration(
+                number_of_results=number_of_results,
+                metadata_filter=None,
+            )
+            response = client.retrieve(
+                knowledgeBaseId=knowledge_base_id,
+                retrievalQuery={"text": question},
+                retrievalConfiguration=retrieval_configuration
+            )
+        else:
+            raise
 
     return response
 
