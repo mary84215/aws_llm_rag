@@ -1,4 +1,4 @@
-# AWS Bedrock Knowledge Base CLI
+# AWS Bedrock實作內部公文生成，含AWS CLI環境設定教學與lambda部署
 
 這個範例展示如何在 VS Code 內使用 Python 透過 AWS Bedrock 進行下列動作：
 
@@ -6,19 +6,26 @@
 - 依照 metadata 進行向量檢索
 - 將檢索結果傳遞給指定的 Bedrock 文字模型（例如 Claude 3 Sonnet）完成推論
 
+![service_description](./service_description.png)
+
 ## 目錄結構
 
 ```
 .
 ├── README.md                # 說明與使用教學
-├── setup.py                 # 套件安裝與 CLI entry point 設定
-├── cli.py                   # 命令列工具主程式
-└── kb_tool/                 # 共用模組
-    ├── __init__.py
-    ├── config.py            # 讀取環境變數、共用設定
-    ├── generator.py         # 呼叫 Bedrock Runtime 進行推論
-    ├── kb_client.py         # 使用 bedrock-agent-runtime 進行知識檢索
-    └── metadata.py          # 解析 metadata filter 參數
+├── requirements.txt         # 執行 CLI 所需套件
+├── setup.py                 # 套件安裝與 kb-cli entry point
+├── cli.py                   # 命令列工具，對應 rephrase / ret-gen / retrieve
+├── lambda_handler.py        # 部署至 Lambda 的進入點
+├── test.py                  # 本地測試三個主要情境的腳本
+├── test_lambda.py           # Lambda 事件模擬測試
+├── tools/                   # 共用模組
+│   ├── __init__.py
+│   ├── config.py            # 基礎設定（model、retrieve、retrieve&generate）
+│   ├── rephrase.py          # 單純重述問題
+│   ├── retrieve.py          # 產生 metadata filter 並呼叫 retrieve API
+│   └── retrieve_generate.py # 呼叫 retrieve_and_generate API
+└── output/                  # ret-gen 指令或測試輸出的內容
 ```
 
 ## 先決條件
@@ -26,7 +33,7 @@
 1. 已具備對應 AWS 帳號的 IAM 權限，可呼叫 `bedrock-agent-runtime` 與 `bedrock-runtime` API。
 2. 工作站已設定好 AWS 認證資訊（`~/.aws/credentials` 或 `AWS_ACCESS_KEY_ID` 等環境變數）。
 3. 在vscode terminal,運用sh指令執行aws_local_access.sh,可以輸入MFA_CODE_ON_PHONE, 之後把echo出的那三組密碼丟入settings.json
-4. aws s3 ls測試有沒有權限操啜aws, 若無法，請重開一個vscode terminal
+4. aws s3 ls測試有沒有權限操作aws, 若無法，請重開一個vscode terminal
 4. 目標 Knowledge Base、向量儲存區與 Bedrock 模型均已在對應 Region 建立。
 
 ## 安裝
@@ -47,50 +54,48 @@ pip install -e .
 
 | 變數 | 用途 |
 | ---- | ---- |
-| `AWS_REGION` 或 `AWS_DEFAULT_REGION` | 目標 Region |
-| `BEDROCK_KB_ID` | 要測試/檢索的 Knowledge Base ID |
-| `BEDROCK_MODEL_ID` | （可選）Bedrock 文字模型 ID，預設為 `anthropic.claude-3-sonnet-20240229-v1:0` |
-| `BEDROCK_KB_TOP_K` | （可選）預設檢索回傳段落數 |
-| `BEDROCK_INSTRUCTIONS` | （可選）系統提示詞 |
+| `AWS_REGION` 或 `AWS_DEFAULT_REGION` | 目標 Region（未設定時預設 `us-east-1`） |
+| `KNOWLEDGE_BASE_ID` | `ret-gen` 與 `retrieve` 指令預設使用的 Knowledge Base ID |
+| `MODEL_ARN` | `ret-gen` 指令預設使用的 Bedrock 模型 ARN |
 
 ## 使用方式
 
-以下所有指令都可使用 `--metadata key=value` 重複提供多組條件，並自動形成 Bedrock 的 equals filter。例如 `--metadata language=zh category=policy`。
+CLI 以三個子指令對應 `test.py` 中的情境，讓常見測試可以直接透過終端機執行。
 
-### 1. 健康檢查
-
-```bash
-kb-cli --mode test
-```
-
-會使用預設查詢字串 `health check` 呼叫 `retrieve`，並輸出成功取得的段落數量，可快速驗證權限、Region 與 Knowledge Base 設定是否正確。
-
-### 2. 單純檢索（不做模型生成）
+### 1. 重述問題（rephrase）
 
 ```bash
-kb-cli --mode retrieve "請問備援機房的標準流程？" --metadata department=it
+kb-cli rephrase "幫我生成SAS軟體採購簽呈"
 ```
 
-指令會呼叫 `bedrock-agent-runtime.retrieve`，並將 JSON 格式的檢索段落直接輸出在終端機，方便與 VS Code Rest Client 或其他工具整合。
+輸出 JSON，包含原始輸入與模型改寫後的敘述，可快速驗證重述 Agent 是否正常。
 
-### 3. 檢索後產生模型回答
+### 2. Retrieve & Generate（ret-gen）
 
 ```bash
-kb-cli --mode generate "總結零信任規範重點" --metadata language=zh --temperature 0.3
+kb-cli ret-gen "幫我生成2025 SAS Viya雲端簽呈。" --kb-id JJYFVHJSPA --model-arn arn:aws:bedrock:us-east-1::foundation-model/amazon.nova-pro-v1:0 --save-output
 ```
 
-流程如下：
+- `--kb-id` 與 `--model-arn` 可省略，若已在環境變數設定 `KNOWLEDGE_BASE_ID`、`MODEL_ARN`。
+- `--save-output` 可選，每次執行會將生成的文字寫入 `output/ret_and_gen.md`（或自訂路徑）。
+- `--top-k` 讓你調整檢索回傳段落數。
 
-1. 透過向量檢索取得最相關的段落。
-2. 將段落內容轉成 context block，搭配自訂 instructions 傳給 `bedrock-runtime.invoke_model`。
-3. 以 JSON 格式回傳回答與原始 snippets，方便除錯與在應用程式中記錄。
+指令會將 `retrieve_and_generate()` 的完整 JSON 回傳到終端機，同時另外輸出純文字結果，方便串接後續流程。
 
-### 參數補充
+### 3. 只檢索 chunk 或檢視 metadata filter（retrieve）
 
-- `--top-k`：調整單次檢索回傳的段落數，預設取決於 `BEDROCK_KB_TOP_K`。
-- `--search-type`：`SEMANTIC` 或 `HYBRID`，方便在測試階段切換演算法。
-- `--instructions`：臨時覆寫系統提示詞（未提供時使用環境變數或預設值）。
-- `--temperature`、`--max-tokens`：對應模型推論參數。
+```bash
+# 同時取得 chunk 與 metadata filter
+kb-cli retrieve "幫我生成SAS Viya雲端簽呈" --kb-id JJYFVHJSPA
+
+# 若只想檢視 metadata filter
+kb-cli retrieve "幫我生成SAS Viya雲端簽呈" --kb-id JJYFVHJSPA --metadata-only
+```
+
+- 預設輸出包含 `chunks`（`retrievalResults`）以及模型產生的 `metadata_filter`。
+- `--metadata-only` 可以跳過 `retrieve()`，單純觀察 filter 結果。
+- `--show-raw` 會額外附上 `bedrock-agent-runtime.retrieve` 的原始回應，方便除錯。
+- `--top-k` 同樣可以調整 `retrieve` 的 `numberOfResults`。
 
 ## 開發與除錯
 
@@ -135,7 +140,3 @@ Lambda 部署時需要：
 - 確保 Lambda 執行角色有 bedrock-agent-runtime 權限
 
 Lambda 函數會回傳 JSON 格式，包含 draft_text 欄位存放生成的簽呈草稿。
-
-## 免責聲明
-
-此程式碼僅作為測試與教學用途，請依照組織安全規範妥善管理 AWS 認證與敏感資料。

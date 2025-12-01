@@ -228,7 +228,8 @@ def _generate_metadata_filter(query: str) -> Optional[dict]:
 def retrieve_from_kb(question: str,
                      knowledge_base_id: str,
                      region: str = RetrieveConfig.REGION,
-                     number_of_results: Optional[int] = None) -> dict:
+                     number_of_results: Optional[int] = None,
+                     metadata_filter: Optional[dict] = None) -> dict:
     """
     從指定的知識庫進行檢索 (Retrieve API)，回傳最相關的內容塊。
     """
@@ -242,11 +243,11 @@ def retrieve_from_kb(question: str,
         )
     )
 
-    metadata_filter = _generate_metadata_filter(question)
+    filter_to_use = metadata_filter if metadata_filter is not None else _generate_metadata_filter(question)
 
     retrieval_configuration = RetrieveConfig.retrieval_configuration(
         number_of_results=number_of_results,
-        metadata_filter=metadata_filter,
+        metadata_filter=filter_to_use,
     )
 
     response = client.retrieve(
@@ -256,6 +257,11 @@ def retrieve_from_kb(question: str,
     )
 
     return response
+
+
+def generate_metadata_filter(question: str) -> Optional[dict]:
+    """Public helper that exposes the metadata filter generator for CLI usage."""
+    return _generate_metadata_filter(question)
 
 # if __name__ == "__main__":
 #     KB_ID = "YOUR_KB_ID"
