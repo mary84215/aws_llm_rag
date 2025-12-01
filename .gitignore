@@ -4,3 +4,4 @@ __pycache__/cli.cpython-311.pyc
 aws_local_access.sh
 .vscode/settings.json
 .DS_Store
+/output
