@@ -98,12 +98,12 @@ QUERY_CONTEXT_TEMPLATE = """
     {
         "key": "category",
         "type": "STRING",
-        "description": "The category of this contract, often but not exclusively on of ['軟體簽約','軟體續約','硬體簽約','硬體續約']"
+        "description": "The category of this contract, often but not exclusively on of ['簽約','續約']"
     },
     {
         "key": "product_name",
         "type": "STRING",
-        "description": "The name of the product, including such like ['SAS Viya','SAS OA','SAS雲端','SAS地端']"
+        "description": "The name of the product, including such like ['SAS Viya','SAS OA']"
     }]
     ```
 
@@ -117,7 +117,7 @@ QUERY_CONTEXT_TEMPLATE = """
     "filter": {
         "andAll": [
         {"equals": {"key": "product_name", "value": "SAS OA"}},
-        {"equals": {"key": "category", "value": "軟體續約"}}
+        {"equals": {"key": "category", "value": "續約"}}
         ]
     }
     }
@@ -129,7 +129,7 @@ QUERY_CONTEXT_TEMPLATE = """
     {
         "key": "category",
         "type": "STRING",
-        "description": "The category of this contract, often but not exclusively on of ['軟體簽約','軟體續約','硬體簽約','硬體續約']"
+        "description": "The category of this contract, often but not exclusively on of ['簽約','續約']"
     },
     {
         "key": "product_name",
@@ -148,7 +148,7 @@ QUERY_CONTEXT_TEMPLATE = """
     "filter": {
         "andAll": [
         {"equals": {"key": "product_name", "value": "SAS Viya"}},
-        {"equals": {"key": "category", "value": "軟體簽約"}}
+        {"equals": {"key": "category", "value": "簽約"}}
         ]
     }
     }
@@ -160,7 +160,7 @@ QUERY_CONTEXT_TEMPLATE = """
     {
         "key": "category",
         "type": "STRING",
-        "description": "The category of this contract, often but not exclusively on of ['軟體簽約','軟體續約','硬體簽約','硬體續約']"
+        "description": "The category of this contract, often but not exclusively on of ['簽約','續約']"
     },
     {
         "key": "product_name",
@@ -182,7 +182,7 @@ QUERY_CONTEXT_TEMPLATE = """
         {"equals": {"key": "product_name", "value": "SAS Viya"}}
         ],
         "andAll": [
-        {"equals": {"key": "category", "value": "軟體續約"}}
+        {"equals": {"key": "category", "value": "續約"}}
         ]
     }
     }
@@ -194,7 +194,7 @@ QUERY_CONTEXT_TEMPLATE = """
     {
         "key": "category",
         "type": "STRING",
-        "description": "The category of this contract, often but not exclusively on of ['軟體簽約','軟體續約','硬體簽約','硬體續約']"
+        "description": "The category of this contract, often but not exclusively on of ['簽約','續約']"
     },
     {
         "key": "product_name",
@@ -204,7 +204,7 @@ QUERY_CONTEXT_TEMPLATE = """
     ```
 
     # Input User Query:  
-    數據部於2025年12月31日簽SAS OA，總計3年3000000元，最高簽核至總經理。
+    數據部於2025年12月31日簽約SAS，總計3年3000000元，最高簽核至總經理。
 
     # Output Structured Request:
     ```json
@@ -212,8 +212,76 @@ QUERY_CONTEXT_TEMPLATE = """
     "query": "請幫我生成簽呈內容",
     "filter": {
         "orAll": [
-        {"equals": {"key": "category", "value": "軟體簽約"}},
-        {"equals": {"key": "category", "value": "軟體續約"}}
+        {"equals": {"key": "product_name", "value": "SAS OA"}},
+        {"equals": {"key": "product_name", "value": "SAS Viya"}}
+        ],
+        "andAll": [
+        {"equals": {"key": "category", "value": "簽約"}}
+        ]
+    }
+    }
+    ```
+    << Example 5 >>
+    # Metadata Schema:
+    ```json
+    [
+    {
+        "key": "category",
+        "type": "STRING",
+        "description": "The category of this contract, often but not exclusively on of ['簽約','續約']"
+    },
+    {
+        "key": "product_name",
+        "type": "STRING",
+        "description": "The name of the product, including such like ['SAS Viya','SAS OA','SAS雲端','SAS地端']"
+    }]
+    ```
+
+    # Input User Query:  
+    數據部於2025年12月31日SAS Viya簽呈，總計3年3000000元，最高簽核至總經理。
+
+    # Output Structured Request:
+    ```json
+    {
+    "query": "請幫我生成簽呈內容",
+    "filter": {
+        "orAll": [
+        {"equals": {"key": "category", "value": "簽約"},
+        {"equals": {"key": "category", "value": "續約"}}
+        ],
+        "andAll": [
+        {"equals": {"key": "product_name", "value": "SAS Viya"}}
+        ]
+    }
+    }
+    ```
+    << Example 6 >>
+    # Metadata Schema:
+    ```json
+    [
+    {
+        "key": "category",
+        "type": "STRING",
+        "description": "The category of this contract, often but not exclusively on of ['簽約','續約']"
+    },
+    {
+        "key": "product_name",
+        "type": "STRING",
+        "description": "The name of the product, including such like ['SAS Viya','SAS OA','SAS雲端','SAS地端']"
+    }]
+    ```
+
+    # Input User Query:  
+    數據部於2025年12月31日SAS OA簽呈，總計3年3000000元，最高簽核至總經理。
+
+    # Output Structured Request:
+    ```json
+    {
+    "query": "請幫我生成簽呈內容",
+    "filter": {
+        "orAll": [
+        {"equals": {"key": "category", "value": "簽約"},
+        {"equals": {"key": "category", "value": "續約"}}
         ],
         "andAll": [
         {"equals": {"key": "product_name", "value": "SAS OA"}}
@@ -249,7 +317,6 @@ LOGICAL_KEYS = {"andAll", "orAll", "and", "or", "op"}
 # Known attribute types for the current KB metadata schema.
 # Extend this map if you add more metadata fields.
 ATTRIBUTE_TYPES: dict[str, str] = {
-    # category is stored as a list (e.g., ["軟體簽約"]), so keep it STRING_LIST to prevent filter drop.
     "category": "STRING_LIST",
     "product_name": "STRING",
     "creation_year": "NUMBER",
@@ -483,10 +550,10 @@ def _add_product_filter(node: dict, product: str) -> dict:
 
 def _extract_category_from_query(query: str) -> Optional[str]:
     """
-    Heuristically extract a category keyword from the user query to reduce LLM mix-ups (簽約 vs 續約, 軟體 vs 硬體).
+    Heuristically extract a category keyword from the user query to reduce LLM mix-ups (簽約 vs 續約).
     """
     # Order matters: longer phrases first.
-    candidates = ["軟體續約", "軟體簽約", "硬體續約", "硬體簽約"]
+    candidates = ["續約", "簽約"]
     for cand in candidates:
         if cand in query:
             return cand
@@ -720,7 +787,7 @@ def _generate_metadata_filter(query: str) -> Optional[dict]:
     if product_in_query:
         normalized_filter = _add_product_filter(normalized_filter, product_in_query)
 
-    # Force category to match query hints (簽約/續約, 軟體/硬體).
+    # Force category to match query hints (簽約/續約).
     category_in_query = _extract_category_from_query(query)
     if category_in_query:
         normalized_filter = _add_category_filter(normalized_filter, category_in_query)
