@@ -1,5 +1,6 @@
 import boto3
 import json
+import re
 from decimal import Decimal
 from typing import Any, Optional
 
@@ -95,10 +96,36 @@ QUERY_CONTEXT_TEMPLATE = """
     ```json
     [
     {
-        "key": "title",
+        "key": "category",
         "type": "STRING",
-        "description": "The title of the contract."
+        "description": "The category of this contract, often but not exclusively on of ['軟體簽約','軟體續約','硬體簽約','硬體續約']"
     },
+    {
+        "key": "product_name",
+        "type": "STRING",
+        "description": "The name of the product, including such like ['SAS Viya','SAS OA','SAS雲端','SAS地端']"
+    }]
+    ```
+
+    # Input User Query:  
+    數據部於2025年12月31日續約SAS OA軟體，總計3年3000000元，最高簽核至總經理。
+
+    # Output Structured Request:
+    ```json
+    {
+    "query": "請幫我生成簽呈內容",
+    "filter": {
+        "andAll": [
+        {"equals": {"key": "product_name", "value": "SAS OA"}},
+        {"equals": {"key": "category", "value": "軟體續約"}}
+        ]
+    }
+    }
+    ```
+    << Example 2 >>
+    # Metadata Schema:
+    ```json
+    [
     {
         "key": "category",
         "type": "STRING",
@@ -107,102 +134,93 @@ QUERY_CONTEXT_TEMPLATE = """
     {
         "key": "product_name",
         "type": "STRING",
-        "description": "The name of the product"
-    },
-    {
-        "key": "creation_year",
-        "type": "NUMBER",
-        "description": "The year the contract was signed or will be signed."
-    },
-    {
-        "key": "date_created",
-        "type": "STRING",
-        "description": "The date the contract was signed or will be signed."
-    },
-    {
-        "key": "related_departments",
-        "type": "STRING_LIST",
-        "description": "The departments related to this contract. Mostly plural."
-    },
-    {
-        "key": "highest_approval_level",
-        "type": "STRING",
-        "description": "The highest rank of approval. Mostly one of ['總經理','副總經理','協理']."
-    },
-    {
-        "key": "budget_amount",
-        "type": "NUMBER",
-        "description": "The amount of money paid in this contract."
-    },
-    {
-        "key": "tags",
-        "type": "STING_LIST",
-        "description": "Any possible useful information other than the categorized metadata."
+        "description": "The name of the product, including such like ['SAS Viya','SAS OA','SAS雲端','SAS地端']"
     }]
     ```
 
     # Input User Query:  
-    What's the average rating of action movies released before 2000?
+    數據部於2025年12月31日簽約SAS Viya軟體，總計3年3000000元，最高簽核至總經理。
 
     # Output Structured Request:
     ```json
     {
-    "query": "What's the average rating of the movies?",
+    "query": "請幫我生成簽呈內容",
     "filter": {
         "andAll": [
-        {"lessThan": {"key": "Year", "value": 2000}},
-        {"equals": {"key": "Genre", "value": "action"}}
+        {"equals": {"key": "product_name", "value": "SAS Viya"}},
+        {"equals": {"key": "category", "value": "軟體簽約"}}
         ]
     }
     }
     ```
-
-    Here is the test example:
-    # Metadata Schema
+    << Example 3 >>
+    # Metadata Schema:
     ```json
     [
-        {
-        "description":"產品名稱 (product_name)，為SAS, SAS Viya或是DataStage",
-        "key":"product_name",
-        "type":"STRING"
-        },
-        {
-        "description":"相關單位（related_departments），包含數據經營部、行銷資訊部、系統資訊部等",
-        "key":"related_departments",
-        "type":"STRING_LIST"
-        },
-        {
-        "description":"合約類別（category），可能包含軟體簽約、軟體續約、硬體簽約或硬體續約",
-        "key":"category",
-        "type":"STRING_LIST"
-        },
-        {
-        "description":"起簽年份（creation_year），為合約起簽的年份",
-        "key":"creation_year",
-        "type":"NUMBER"
-        },
-        {
-        "description":"起簽日期（date_created），為合約起簽的日期",
-        "key":"date_created",
-        "type":"STRING"
-        },
-        {
-        "description":"最高簽約層級(highest_approval_level)，此份合約最高簽到哪個層級",
-        "key":"highest_approval_level",
-        "type":"STRING"
-        },
-        {
-        "description":"簽約費用(budget_amount)，本件合約簽署的總金額",
-        "key":"budget_amount",
-        "type":"NUMBER"
-        }
-    ] #這邊可以修改「我們可能要用哪些filter」
+    {
+        "key": "category",
+        "type": "STRING",
+        "description": "The category of this contract, often but not exclusively on of ['軟體簽約','軟體續約','硬體簽約','硬體續約']"
+    },
+    {
+        "key": "product_name",
+        "type": "STRING",
+        "description": "The name of the product, including such like ['SAS Viya','SAS OA','SAS雲端','SAS地端']"
+    }]
     ```
 
-    # Input User Query:
-    <<USER_QUERY>>
+    # Input User Query:  
+    數據部於2025年12月31日續約SAS，總計3年3000000元，最高簽核至總經理。
 
     # Output Structured Request:
+    ```json
+    {
+    "query": "請幫我生成簽呈內容",
+    "filter": {
+        "orAll": [
+        {"equals": {"key": "product_name", "value": "SAS OA"}},
+        {"equals": {"key": "product_name", "value": "SAS Viya"}}
+        ],
+        "andAll": [
+        {"equals": {"key": "category", "value": "軟體續約"}}
+        ]
+    }
+    }
+    ```
+    << Example 4 >>
+    # Metadata Schema:
+    ```json
+    [
+    {
+        "key": "category",
+        "type": "STRING",
+        "description": "The category of this contract, often but not exclusively on of ['軟體簽約','軟體續約','硬體簽約','硬體續約']"
+    },
+    {
+        "key": "product_name",
+        "type": "STRING",
+        "description": "The name of the product, including such like ['SAS Viya','SAS OA','SAS雲端','SAS地端']"
+    }]
+    ```
+
+    # Input User Query:  
+    數據部於2025年12月31日簽SAS OA，總計3年3000000元，最高簽核至總經理。
+
+    # Output Structured Request:
+    ```json
+    {
+    "query": "請幫我生成簽呈內容",
+    "filter": {
+        "orAll": [
+        {"equals": {"key": "category", "value": "軟體簽約"}},
+        {"equals": {"key": "category", "value": "軟體續約"}}
+        ],
+        "andAll": [
+        {"equals": {"key": "product_name", "value": "SAS OA"}}
+        ]
+    }
+    }
+    ```
 """
 
 
@@ -231,15 +249,16 @@ LOGICAL_KEYS = {"andAll", "orAll", "and", "or", "op"}
 # Known attribute types for the current KB metadata schema.
 # Extend this map if you add more metadata fields.
 ATTRIBUTE_TYPES: dict[str, str] = {
-    "title": "STRING",
-    "category": "STRING",
-    "creation_year": "NUMBER",
+    # category is stored as a list (e.g., ["軟體簽約"]), so keep it STRING_LIST to prevent filter drop.
+    "category": "STRING_LIST",
     "product_name": "STRING",
+    "creation_year": "NUMBER",
+    "title": "STRING",
     "related_departments": "STRING_LIST",
     "tags": "STRING_LIST",
     "highest_approval_level": "STRING",
     "date_created": "STRING",
-    "budget_amount": "NUMBER"
+    "budget_amount": "NUMBER",
 }
 
 
@@ -371,6 +390,167 @@ def _enforce_attribute_types(node: Any) -> Optional[dict]:
             fixed[key] = value
 
     return fixed or None
+
+
+def _extract_product_from_query(query: str) -> Optional[str]:
+    """
+    Heuristically extract a product name from the user query (e.g., 'SAS Viya', 'SAS OA').
+    Returns None if nothing obvious is found.
+    """
+    matches = re.findall(r"SAS[\s\\-]*[A-Za-z0-9]+(?:[\s\\-]*[A-Za-z0-9]+)?", query, flags=re.IGNORECASE)
+    if not matches:
+        return None
+    # Choose the longest match to avoid partials.
+    product = max(matches, key=len).strip()
+    return product
+
+
+def _add_product_filter(node: dict, product: str) -> dict:
+    """
+    Ensure the filter tree includes an equals comparator for product_name with the provided value.
+    If a product_name comparator already exists, it is overwritten with the query-derived product.
+    """
+    if not isinstance(node, dict):
+        return {}
+
+    product_comp = {"equals": {"key": "product_name", "value": {"stringValue": product}}}
+
+    def _product_matches(val: Any) -> bool:
+        if not isinstance(val, dict):
+            return False
+        if val.get("key") != "product_name":
+            return False
+        v = val.get("value", {})
+        if not isinstance(v, dict):
+            return False
+        if "stringValue" in v and str(v.get("stringValue", "")).strip() == product:
+            return True
+        if "stringListValue" in v and any(str(x).strip() == product for x in v.get("stringListValue") or []):
+            return True
+        return False
+
+    def _append_to_first_or(n: Any) -> bool:
+        if not isinstance(n, dict):
+            return False
+        if "orAll" in n and isinstance(n["orAll"], list):
+            # Only append if not already present
+            exists = False
+            for item in n["orAll"]:
+                if isinstance(item, dict):
+                    inner = next(iter(item.values())) if item else None
+                    if _product_matches(inner):
+                        exists = True
+                        break
+            if not exists:
+                n["orAll"].append(product_comp)
+            return True
+        for v in n.values():
+            if isinstance(v, dict) and _append_to_first_or(v):
+                return True
+            if isinstance(v, list):
+                for item in v:
+                    if isinstance(item, dict) and _append_to_first_or(item):
+                        return True
+        return False
+
+    # Overwrite existing product_name comparator if present.
+    for key, value in list(node.items()):
+        if key in COMPARATOR_KEYS and isinstance(value, dict) and value.get("key") == "product_name":
+            node[key] = product_comp["equals"]
+            return node
+        if key in {"andAll", "orAll"} and isinstance(value, list):
+            for child in value:
+                if isinstance(child, dict) and any(
+                    comp.get("key") == "product_name" for comp in child.values() if isinstance(comp, dict)
+                ):
+                    # Overwrite in-place
+                    for comp_key, comp_val in child.items():
+                        if isinstance(comp_val, dict) and comp_val.get("key") == "product_name":
+                            child[comp_key] = product_comp["equals"]
+                            return node
+
+    # If the LLM already expressed disjunction (orAll) anywhere, append there.
+    if _append_to_first_or(node):
+        return node
+
+    # Otherwise, append the comparator to an existing andAll or wrap both in a new andAll.
+    if "andAll" in node and isinstance(node["andAll"], list):
+        node["andAll"].append(product_comp)
+        return node
+    else:
+        return {"andAll": [node, product_comp]}
+
+
+def _extract_category_from_query(query: str) -> Optional[str]:
+    """
+    Heuristically extract a category keyword from the user query to reduce LLM mix-ups (簽約 vs 續約, 軟體 vs 硬體).
+    """
+    # Order matters: longer phrases first.
+    candidates = ["軟體續約", "軟體簽約", "硬體續約", "硬體簽約"]
+    for cand in candidates:
+        if cand in query:
+            return cand
+    # Fallback to single-word hints (less precise)
+    if "續約" in query:
+        return "續約"
+    if "簽約" in query:
+        return "簽約"
+    return None
+
+
+def _add_category_filter(node: dict, category: str) -> dict:
+    """
+    Ensure the filter tree includes a comparator for category using the KB type (STRING_LIST by default).
+    """
+    if not isinstance(node, dict):
+        return {}
+
+    # Build comparator based on configured type
+    attr_type = ATTRIBUTE_TYPES.get("category", "STRING_LIST")
+    if attr_type == "STRING_LIST":
+        cat_comp = {"listContains": {"key": "category", "value": {"stringListValue": [category]}}}
+    else:
+        cat_comp = {"equals": {"key": "category", "value": {"stringValue": category}}}
+
+    # Overwrite existing category comparator if present
+    for key, value in list(node.items()):
+        if key in COMPARATOR_KEYS and isinstance(value, dict) and value.get("key") == "category":
+            node[key] = cat_comp[next(iter(cat_comp.keys()))]
+            return node
+        if key in {"andAll", "orAll"} and isinstance(value, list):
+            for child in value:
+                if isinstance(child, dict) and any(
+                    comp.get("key") == "category" for comp in child.values() if isinstance(comp, dict)
+                ):
+                    for comp_key, comp_val in child.items():
+                        if isinstance(comp_val, dict) and comp_val.get("key") == "category":
+                            child[comp_key] = cat_comp[next(iter(cat_comp.keys()))]
+                            return node
+
+    # If the LLM already expressed disjunction (orAll), append there.
+    def _append_to_first_or(n: Any) -> bool:
+        if not isinstance(n, dict):
+            return False
+        if "orAll" in n and isinstance(n["orAll"], list):
+            n["orAll"].append(cat_comp)
+            return True
+        for v in n.values():
+            if isinstance(v, dict) and _append_to_first_or(v):
+                return True
+            if isinstance(v, list):
+                for item in v:
+                    if isinstance(item, dict) and _append_to_first_or(item):
+                        return True
+        return False
+    if _append_to_first_or(node):
+        return node
+
+    # Otherwise, append to existing andAll or wrap
+    if "andAll" in node and isinstance(node["andAll"], list):
+        node["andAll"].append(cat_comp)
+        return node
+    else:
+        return {"andAll": [node, cat_comp]}
 
 
 def _normalize_comparator_payload(comparator: str, payload: Any) -> Optional[dict]:
@@ -532,6 +712,19 @@ def _generate_metadata_filter(query: str) -> Optional[dict]:
             return None
 
     normalized_filter = _normalize_metadata_filter(metadata_filter)
+    if not isinstance(normalized_filter, dict):
+        return None
+
+    # Force product_name to match the query if we can extract it; otherwise, keep the normalized filter.
+    product_in_query = _extract_product_from_query(query)
+    if product_in_query:
+        normalized_filter = _add_product_filter(normalized_filter, product_in_query)
+
+    # Force category to match query hints (簽約/續約, 軟體/硬體).
+    category_in_query = _extract_category_from_query(query)
+    if category_in_query:
+        normalized_filter = _add_category_filter(normalized_filter, category_in_query)
+
     return normalized_filter if isinstance(normalized_filter, dict) else None
 
 
