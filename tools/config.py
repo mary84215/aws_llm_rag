@@ -88,3 +88,10 @@ class RetrieveGenerateConfig:
                 },
             },
         }
+
+
+class AgentInvocationConfig:
+    REGION = DEFAULT_REGION
+    OUTPUT_DIR = "output"
+    RESPONSE_MD_FILENAME = "agent_response.md"
+    CHUNKS_JSON_FILENAME = "agent_chunks.json"
